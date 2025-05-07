@@ -1,7 +1,6 @@
 package com.example.lab2.controlers.rest;
 
-import com.example.lab2.models.dto.FamilyDTO;
-import com.example.lab2.models.dto.MoneyDTO;
+import com.example.lab2.model.dto.MoneyDTO;
 import com.example.lab2.service.FinanceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.processing.Generated;
 import javax.validation.Valid;
-import java.util.List;
 
 @Generated(value = "io.swagger.codegen.v3.generators.java.SpringCodegen", date = "2025-04-29T17:08:35.048350733Z[GMT]")
 @RestController

@@ -5,7 +5,7 @@
  */
 package com.example.lab2.controlers.rest;
 
-import com.example.lab2.models.dto.BuyDTO;
+import com.example.lab2.model.dto.BuyDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

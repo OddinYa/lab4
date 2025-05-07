@@ -1,9 +1,8 @@
 package com.example.lab2.service;
 
-import com.example.lab2.models.dto.BuyDTO;
-import com.example.lab2.models.dto.FamilyDTO;
-import com.example.lab2.models.dto.MoneyDTO;
-import com.example.lab2.models.dto.UserDTO;
+import com.example.lab2.model.dto.BuyDTO;
+import com.example.lab2.model.dto.MoneyDTO;
+import com.example.lab2.model.dto.UserDTO;
 
 import java.util.List;
 

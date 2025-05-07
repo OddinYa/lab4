@@ -1,6 +1,6 @@
 package com.example.lab2.controlers.rest;
 
-import com.example.lab2.models.dto.BuyDTO;
+import com.example.lab2.model.dto.BuyDTO;
 import com.example.lab2.service.FinanceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Parameter;

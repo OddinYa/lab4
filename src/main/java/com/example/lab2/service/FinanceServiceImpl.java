@@ -1,10 +1,12 @@
 package com.example.lab2.service;
 
-import com.example.lab2.models.*;
-import com.example.lab2.models.dto.*;
+import com.example.lab2.model.dto.*;
+import com.example.lab2.model.entity.Buy;
+import com.example.lab2.model.entity.Family;
+import com.example.lab2.model.entity.Money;
+import com.example.lab2.model.entity.User;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
