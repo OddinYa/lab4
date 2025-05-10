@@ -5,7 +5,15 @@ import com.example.lab2.model.entity.Buy;
 import com.example.lab2.model.entity.Family;
 import com.example.lab2.model.entity.Money;
 import com.example.lab2.model.entity.User;
+import com.example.lab2.repository.BuyRepository;
+import com.example.lab2.repository.FamilyRepository;
+import com.example.lab2.repository.MoneyRepository;
+import com.example.lab2.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,181 +22,149 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+
 public class FinanceServiceImpl implements FinanceService {
 
-    private static final Family familyObj = initFamili();
+    private final UserRepository userRepository;
+    private final BuyRepository buyRepository;
+    private final MoneyRepository moneyRepository;
+    private  final FamilyRepository familyRepository;
+
+    @Autowired
+    public FinanceServiceImpl(UserRepository userRepository,
+                              BuyRepository buyRepository,MoneyRepository moneyRepository,
+                              FamilyRepository familyRepository) {
+        this.userRepository = userRepository;
+        this.familyRepository = familyRepository;
+        this.moneyRepository = moneyRepository;
+        this.buyRepository = buyRepository;
+    }
+
+
 
     @Override
+    @Transactional
     public void addUser(UserDTO userDTO, Integer familyId) {
-        Family family = familyObj;
+        // 1. Находим семью
+        Family family = familyRepository.findById(familyId)
+                .orElseThrow(() -> new RuntimeException("Семья не найдена"));
 
-        User user = convertToUser(userDTO);
-        user.setId(getNextUserId());
-        Money money = family.getMoney();
-        user.setMoney(money);
-        money.setCash(money.getCash()+userDTO.getMoney().getCash());
-        family.setMoney(money);
+        // 2. Работа с деньгами семьи
+        Money familyMoney = family.getMoney();
+        familyMoney.setCash(familyMoney.getCash() + userDTO.getMoney().getCash());
+        moneyRepository.save(familyMoney);  // Обновляем общий бюджет
+
+        // 3. Создаем пользователя
+        User user = new User();
+        user.setName(userDTO.getName());
+        user.setFamily(family);
+        user.setMoney(familyMoney);  // Используем общий Money семьи
+        user.setSpending(0);
+
+        // 4. Сохраняем каскадно
+        user.getBuyList().clear();  // Очищаем временные данные
+        userRepository.save(user);
+
+        // 5. Обновляем связь в семье (опционально)
         family.getUserList().add(user);
+        familyRepository.save(family);
     }
 
 
     @Override
+    @Transactional(readOnly = true)
     public UserDTO getUser(Integer userId) {
-        User user = findUserById(userId);
-        return convertToUserDTO(user);
+        Optional<User> user = userRepository.findById(userId);
+        return convertToUserDTO(user.get());
     }
 
     @Override
+    @Transactional
     public void deleteUser(Integer userId) {
-
-        familyObj.getUserList().removeIf(user -> user.getId().equals(userId));
+        userRepository.deleteById(userId);
     }
 
 
     @Override
+    @Transactional
     public void addBuy(BuyDTO buyDTO, Integer familyId) {
-        Family family =familyObj;
-        User user = family.getUserList().stream()
-                .filter(u -> Objects.equals(u.getId(), buyDTO.getIdUser()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("User with id " +  buyDTO.getIdUser()  + " not found"));
 
-        Buy buy = convertToBuy(buyDTO);
-        buy.setId(getNextBuyId());
-        buy.setUserName(user.getName());
-        user.getBuyList().add(buy);
-        user.setSpending(user.getSpending() + buy.getCost());
-        Money money = user.getMoney();
-        money.setCash(user.getMoney().getCash() - buy.getCost());
-        familyObj.setMoney(money);
+       var buy = convertToBuy(buyDTO);
+       var user = userRepository.findById(buyDTO.getIdUser());
+       buy.setName(user.get().getName());
+
+       buyRepository.save(buy);
+
+
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BuyDTO> getBuys(Integer familyId) {
-        return familyObj.getUserList().stream()
-                .flatMap(user -> user.getBuyList().stream())
-                .map(this::convertToBuyDTO)
-                .collect(Collectors.toList());
-    }
 
-    @Override
-    public void deleteBuy(Integer buyId, Integer familyId) {
-        Family family = familyObj;
-        family.getUserList().forEach(user -> {
-            Optional<Buy> buy = user.getBuyList().stream()
-                    .filter(b -> b.getId().equals(buyId))
-                    .findFirst();
-            if (buy.isPresent()) {
-                user.getBuyList().remove(buy.get());
-                user.setSpending(user.getSpending() - buy.get().getCost());
-                user.getMoney().setCash(user.getMoney().getCash() + buy.get().getCost());
+        var family = familyRepository.findById(familyId).orElseThrow();
+
+        List<User> users = family.getUserList();
+
+        List<BuyDTO> buyDTOs = new ArrayList<>();
+        for (User user : users) {
+            List<Buy> userBuys = user.getBuyList();
+            for (Buy buy : userBuys) {
+                buyDTOs.add(convertToBuyDTO(buy));
             }
-        });
+        }
+
+        return buyDTOs;
+    }
+
+
+
+    @Override
+    @Transactional
+    public void deleteBuy(Integer buyId, Integer familyId) {
+      buyRepository.deleteById(buyId);
     }
 
     @Override
-    public Double getBalance(Integer familyId) {
-        return (double) familyObj.getMoney().getCash();
+    @Transactional(readOnly = true)
+    public Float getBalance(Integer familyId) {
+        Optional<Family> family = familyRepository.findById(familyId);
+
+        return (Float) family.get().getMoney().getCash();
     }
 
     @Override
+    @Transactional
     public void addBalance(MoneyDTO moneyDTO, Integer familyId) {
-        Family family = familyObj;
+
+        Family family = familyRepository.findById(familyId)
+                .orElseThrow();
+
         family.getMoney().setCash(
                 family.getMoney().getCash() + moneyDTO.getCash()
         );
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDTO> getUsers() {
-        Family family = familyObj;
 
-        return family.getUserList().
+        List<User> users = userRepository.findAll();
+
+        return users.
                 stream().
                 map(this::convertToUserDTO).
                 collect(Collectors.toList());
-
     }
 
-    // @Override
-   // public List<FamilyDTO> getFamilies() {
-   //     return listFamily.stream()
-   //             .map(this::convertToFamilyDTO)
-   //             .collect(Collectors.toList());
-   // }
 
-    // Вспомогательные методы
-  // private Family findFamilyById(Integer familyId) {
-  //     return listFamily.stream()
-  //             .filter(f -> f.getId().equals(familyId))
-  //             .findFirst()
-  //             .orElseThrow(() -> new RuntimeException("Family not found"));
-  // }
 
-  // private User findUserById(Integer userId) {
-  //     return listFamily.stream()
-  //             .flatMap(f -> f.getUserList().stream())
-  //             .filter(u -> u.getId().equals(userId))
-  //             .findFirst()
-  //             .orElseThrow(() -> new RuntimeException("User not found"));
-  // }
 
-    private User findUserById(Integer userId){
-        return familyObj.getUserList().stream()
-                .filter(u -> u.getId().equals(userId))
-                .findFirst().orElseThrow(() -> new RuntimeException("User not found"));
-    }
-  //  private int getNextFamilyId() {
-  //      return listFamily.stream()
-  //              .mapToInt(Family::getId)
-  //              .max().orElse(0) + 1;
-  //  }
-
-   // private int getNextUserId() {
-   //     return listFamily.stream()
-   //             .flatMap(f -> f.getUserList().stream())
-   //             .mapToInt(User::getId)
-   //             .max().orElse(0) + 1;
-   // }
-
-    private int getNextUserId() {
-        return familyObj.getUserList().stream()
-                .mapToInt(User::getId)
-                .max().orElse(0) + 1;
-    }
-   // private int getNextMoneyId() {
-   //     int maxFamilyMoney = listFamily.stream()
-   //             .mapToInt(f -> f.getMoney().getId())
-   //             .max().orElse(0);
-   //     int maxUserMoney = listFamily.stream()
-   //             .flatMap(f -> f.getUserList().stream())
-   //             .mapToInt(u -> u.getMoney().getId())
-   //             .max().orElse(0);
-   //     return Math.max(maxFamilyMoney, maxUserMoney) + 1;
-   // }
-
-  // private int getNextBuyId() {
-  //     return listFamily.stream()
-  //             .flatMap(f -> f.getUserList().stream())
-  //             .flatMap(u -> u.getBuyList().stream())
-  //             .mapToInt(Buy::getId)
-  //             .max().orElse(0) + 1;
-  // }
-
-        private int getNextBuyId() {
-            return familyObj.getUserList().stream()
-                    .flatMap(u -> u.getBuyList().stream())
-                    .mapToInt(Buy::getId)
-                    .max().orElse(0) + 1;
-        }
 
     // Конвертеры DTO
     private User convertToUser(UserDTO dto) {
-        Money money = new Money(dto.getMoney().getCash());
-       // money.setId(getNextMoneyId());
-
-        User user = new User(money, dto.getName());
-        user.setId(getNextUserId());
+        User user = new User();
+        user.setName(dto.getName());
         user.setSpending(dto.getSpending());
         user.setBuyList(new ArrayList<>());
         return user;
@@ -207,7 +183,10 @@ public class FinanceServiceImpl implements FinanceService {
     }
 
     private Buy convertToBuy(BuyDTO dto) {
-        return new Buy(dto.getId(),dto.getIdUser(),dto.getCost(),dto.getName(),dto.getDate(),dto.getUserName());
+
+        User user = userRepository.findById(dto.getIdUser()).orElseThrow();
+
+        return new Buy(user,dto.getCost(),dto.getName(),dto.getDate(),dto.getUserName());
     }
 
     private BuyDTO convertToBuyDTO(Buy buy) {
@@ -229,14 +208,5 @@ public class FinanceServiceImpl implements FinanceService {
         return dto;
     }
 
-    //TODO: Удалить как подлючу к бд
-    private static Family initFamili(){
-        Money money = new Money(467);
-        User user = new User(money,"Сергей");
-        user.setId(1);
-        Family family = new Family(money);
-        family.getUserList().add(user);
 
-        return family;
-    }
 }

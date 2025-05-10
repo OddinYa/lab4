@@ -38,7 +38,7 @@ public interface FamilyApi {
     @RequestMapping(value = "/family/balance/{familyId}",
         produces = { "application/json" }, 
         method = RequestMethod.GET)
-    ResponseEntity<Double> familyBalanceFamilyIdGet(@Parameter(in = ParameterIn.PATH, description = "ID семьи", required=true, schema=@Schema()) @PathVariable("familyId") Integer familyId
+    ResponseEntity<Float> familyBalanceFamilyIdGet(@Parameter(in = ParameterIn.PATH, description = "ID семьи", required=true, schema=@Schema()) @PathVariable("familyId") Integer familyId
 );
 
 

@@ -1,17 +1,19 @@
 package com.example.lab2.model.entity;
 
 
+import jakarta.persistence.*;
+import lombok.Data;
 
-
-import javax.persistence.*;
 import java.time.LocalDate;
 @Entity
-@Table(name = "buy")
+@Data
 public class Buy {
 
-    public Buy(Integer id ,Integer idUser, Float cost,String name,LocalDate date,String userName){
-        this.id = id;
-        this.idUser = idUser;
+    public Buy(){}
+
+    public Buy( User idUser, Float cost,String name,LocalDate date,String userName){
+
+        this.user = idUser;
         this.cost = cost;
         this.name = name;
         this.date = date;
@@ -21,8 +23,13 @@ public class Buy {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
     private String userName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name ="id_user")
+    private User user;
+    private float cost;
+    private String name;
+    private LocalDate date;
 
     public String getUserName() {
         return userName;
@@ -32,15 +39,13 @@ public class Buy {
         this.userName = userName;
     }
 
-    public Integer getIdUser() {
-        return idUser;
+    public User getUser() {
+        return user;
     }
 
-    public void setIdUser(Integer idUser) {
-        this.idUser = idUser;
+    public void setUser(User idUser) {
+        this.user = idUser;
     }
-
-    private Integer idUser;
     public Integer getId() {
         return id;
     }
@@ -73,8 +78,6 @@ public class Buy {
         this.date = date;
     }
 
-    private float cost;
-    private String name;
-    private LocalDate date;
+
 
 }

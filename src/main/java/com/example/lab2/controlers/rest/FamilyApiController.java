@@ -40,7 +40,7 @@ public class FamilyApiController implements FamilyApi {
 
     }
 
-    public ResponseEntity<Double> familyBalanceFamilyIdGet(
+    public ResponseEntity<Float> familyBalanceFamilyIdGet(
             @Parameter(in = ParameterIn.PATH, description = "ID семьи", required=true, schema=@Schema())
             @PathVariable("familyId") Integer familyId
 ) {
@@ -48,14 +48,14 @@ public class FamilyApiController implements FamilyApi {
         if (accept != null && accept.contains("application/json")) {
             try {
                 var balans = financeService.getBalance(familyId);
-                return new ResponseEntity<Double>(balans, HttpStatus.valueOf(200));
+                return new ResponseEntity<Float>(balans, HttpStatus.valueOf(200));
             } catch (Exception e) {
                 log.error("Couldn't serialize response for content type application/json", e);
-                return new ResponseEntity<Double>(HttpStatus.valueOf(500));
+                return new ResponseEntity<Float>(HttpStatus.valueOf(500));
             }
         }
 
-        return new ResponseEntity<Double>(HttpStatus.valueOf(404));
+        return new ResponseEntity<Float>(HttpStatus.valueOf(404));
     }
 
     public ResponseEntity<Void> familyBalanceFamilyIdPost(

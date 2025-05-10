@@ -27,7 +27,7 @@ public interface FinanceService {
     void deleteBuy(Integer buyId, Integer familyId);
 
 
-    Double getBalance(Integer familyId);
+    Float getBalance(Integer familyId);
 
 
     void addBalance(MoneyDTO moneyDTO, Integer familyId);

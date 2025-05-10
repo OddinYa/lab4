@@ -1,16 +1,24 @@
 package com.example.lab2.model.entity;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
-@Getter
-@Setter
+
+@Entity
+@Data
+
 public class Money  {
 
     public Money(float cash){
 
         this.cash = cash;
     }
+    public Money(){
+
+    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private float cash;
 

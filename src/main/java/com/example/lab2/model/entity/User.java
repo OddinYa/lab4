@@ -1,15 +1,24 @@
 package com.example.lab2.model.entity;
+import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
+
+@Entity
+@Data
 @Setter
+@Getter
 public class User  {
 
+    public User(){
+
+    }
     public User(Money money,String name){
 
         this.money = money;
@@ -19,13 +28,33 @@ public class User  {
 
     }
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Integer id;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "money_id",referencedColumnName = "id")
     private Money money;
     private float spending;
     private String name;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "family_id")
+    private Family family;
 
-    private List<Buy> buyList;
+    public void setFamily(Family family){
+        this.family = family;
+    }
+    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<Buy> buyList = new ArrayList<>();
 
+    @PrePersist
+    @PreUpdate
+    private void updateSpending() {
+        if (buyList != null) {
+            this.spending = (float) buyList.stream()
+                    .mapToDouble(Buy::getCost)
+                    .sum();
+        }
+    }
     public Integer getId() {
         return id;
     }
